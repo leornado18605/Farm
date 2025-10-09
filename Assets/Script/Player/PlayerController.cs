@@ -12,9 +12,15 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private SpriteRenderer _sprite;
 
     private Vector2 _lastMoveDir = Vector2.down;
-
+    private bool isHoeing = false;
     void FixedUpdate()
     {
+        if (isHoeing)
+        {
+            _rb2D.linearVelocity = Vector2.zero;
+            return;
+        }
+        
         PlayerMovement();
     }
 
@@ -35,7 +41,7 @@ public class PlayerController : MonoBehaviour
     }
     private void ApplyMovement(Vector2 moveInput)
     {
-        _rb2D.linearVelocity = moveInput * moveSpeed;   // dùng velocity, không phải linearVelocity
+        _rb2D.linearVelocity = moveInput * moveSpeed;   
     }
 
     private Vector2 ClampToCardinal(Vector2 input)
@@ -67,4 +73,46 @@ public class PlayerController : MonoBehaviour
         else if (_lastMoveDir.x > 0)
             _sprite.flipX = false;
     }
+    public void StartHoeing()
+    {
+        if (isHoeing) return; 
+        isHoeing = true;
+
+        _rb2D.linearVelocity = Vector2.zero;
+
+        _animator.SetFloat("Speed", 0f);
+        _animator.SetBool("IsHoeing", true);
+
+    }
+
+    public void EndHoeing()
+    {
+        if (!isHoeing) return;
+        isHoeing = false;
+
+        _animator.SetBool("IsHoeing", false);
+    }
+    
+    public void FaceDirection(Vector2 dir)
+    {
+        if (dir == Vector2.zero) return;
+
+        if (Mathf.Abs(dir.x) > Mathf.Abs(dir.y))
+            dir = new Vector2(Mathf.Sign(dir.x), 0);
+        else
+            dir = new Vector2(0, Mathf.Sign(dir.y));
+
+        _animator.SetFloat("MoveX", dir.x);
+        _animator.SetFloat("MoveY", dir.y);
+        _lastMoveDir = dir;
+
+        if (dir.x < 0)
+            _sprite.flipX = true;
+        else if (dir.x > 0)
+            _sprite.flipX = false;
+    }
+
+
+
+
 }

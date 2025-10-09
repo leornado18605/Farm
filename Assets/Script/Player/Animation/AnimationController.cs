@@ -40,4 +40,19 @@ public class AnimationController : MonoBehaviour
         currentState = states[newState];
         currentState.Enter(animator);
     }
+    
+    public void PlayAction(string triggerName)
+    {
+        if (animator == null)
+        {
+            Debug.LogWarning("Animator reference missing!");
+            return;
+        }
+
+        animator.ResetTrigger("Idle");
+        animator.ResetTrigger("Walk");
+        animator.ResetTrigger("Run");
+        animator.SetTrigger(triggerName);
+    }
+
 }
