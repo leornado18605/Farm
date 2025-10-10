@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -6,101 +7,83 @@ public class ToolController : MonoBehaviour
     [Header("References")]
     [SerializeField] private PlayerController player;
     [SerializeField] private Transform playerTransform;
-    [SerializeField] private float interactRange = 1.5f;
     [SerializeField] private LayerMask soilLayer;
+    [SerializeField] private float interactRange = 1.5f;
 
-    private GameObject targetSoil;
-    private ToolType currentTool = ToolType.Hoe;
+    [Header("Tools")]
+    [SerializeField] private List<Tool> tools = new List<Tool>();
+    [SerializeField] private int currentToolIndex = 0;
+    
+    private GroundTile targetTile;
+    private Tool currentTool => tools.Count > 0 ? tools[currentToolIndex] : null;
+
+    public void SelectTool(int index)
+    {
+        if (index < 0 || index >= tools.Count) return;
+        currentToolIndex = index;
+        Debug.Log($"🔧 Switched to: {tools[currentToolIndex].name}");
+    }
 
     void Update()
     {
-        if (IsPointerOverUI()) return;
         if (Input.GetMouseButtonDown(0))
-            TryUseTool();
-    }
-
-    private bool IsPointerOverUI()
-    {
-#if UNITY_EDITOR || UNITY_STANDALONE
-        return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-#elif UNITY_ANDROID || UNITY_IOS
-        if (EventSystem.current == null) return false;
-        if (Input.touchCount > 0)
         {
-            Touch t = Input.GetTouch(0);
-            return EventSystem.current.IsPointerOverGameObject(t.fingerId);
+            if (TrySelectTile(out targetTile))
+            {
+                FaceToTile();
+                if (targetTile.GetState() == SoilState.Normal && currentToolIndex != 0)
+                {
+                    currentToolIndex = 0;
+                }
+                currentTool?.Use(targetTile, player);
+            }
         }
-        return false;
-#else
-        return false;
-#endif
     }
 
-    private void TryUseTool()
+    private bool TrySelectTile(out GroundTile tile)
     {
-        if (currentTool != ToolType.Hoe) return;
-
-        Vector2 clickPoint;
-        if (!TryGetClickPoint(out clickPoint)) return;
-
-        if (!TrySelectSoil(clickPoint)) return;
-
-        FacePlayerToTarget(clickPoint);
-        TryStartHoeing();
+        Vector2 click = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Collider2D hit = Physics2D.OverlapPoint(click, soilLayer);
+        tile = hit ? hit.GetComponent<GroundTile>() : null;
+        return tile != null;
     }
 
-    
-    private bool TryGetClickPoint(out Vector2 clickPoint)
+    private void FaceToTile()
     {
-        Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        clickPoint = new Vector2(mousePos.x, mousePos.y);
-        return true;
-    }
-    
-    private bool TrySelectSoil(Vector2 clickPoint)
-    {
-        Collider2D hit = Physics2D.OverlapPoint(clickPoint, soilLayer);
-        if (hit == null || !hit.CompareTag("Soil"))
-            return false;
-
-        targetSoil = hit.gameObject;
-        return true;
-    }
-    
-    private void FacePlayerToTarget(Vector2 clickPoint)
-    {
-        Vector2 dir = (clickPoint - (Vector2)playerTransform.position).normalized;
+        Vector2 dir = (targetTile.transform.position - playerTransform.position).normalized;
         player.FaceDirection(dir);
     }
-    
-    private void TryStartHoeing()
-    {
-        if (targetSoil == null) return;
 
-        if (Vector2.Distance(playerTransform.position, targetSoil.transform.position) <= interactRange)
-        {
-            player.StartHoeing(); 
-        }
-    }
-    
     public void OnHoeStage(int stage)
     {
-        if (targetSoil && targetSoil.TryGetComponent(out GroundTile tile))
+        if (targetTile == null) return;
+        GameEvents.RaiseHoeStage(stage, targetTile);
+        if (stage == 3) 
         {
-            switch (stage)
-            {
-                case 1:
-                    tile.ChangeToStage1();
-                    break;
-                case 2:
-                    tile.ChangeToStage2();
-                    break;
-                case 3:
-                    tile.ChangeToStage3();
-                    break;
-            }
-
-            Debug.Log($"🪓 Hoe stage {stage} triggered!");
+            NextTool();
+            Debug.Log("🌾 Switched automatically to SeedTool after hoeing!");
         }
     }
+    private void NextTool()
+    {
+        currentToolIndex++;
+        if (currentToolIndex >= tools.Count)
+            currentToolIndex = 0;
+    }
+
+    public void OnSeedStage(int stage)
+    {
+        if (targetTile == null) return;
+        if (stage == 1)
+        {
+            targetTile.PlantSeed();
+            player.StopSeeding();
+        }
+    }
+    
+    public void ShowBag(bool show)
+    {
+        player.ShowSeedBag(show);
+    }
+
 }

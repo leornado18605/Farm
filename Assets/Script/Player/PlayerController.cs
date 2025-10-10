@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using DG.Tweening;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(SpriteRenderer))]
@@ -13,6 +14,10 @@ public class PlayerController : MonoBehaviour
 
     private Vector2 _lastMoveDir = Vector2.down;
     private bool isHoeing = false;
+    
+    [SerializeField] private GameObject seedBag;
+    public Vector2 LastDirection => _lastMoveDir;
+
     void FixedUpdate()
     {
         if (isHoeing)
@@ -112,7 +117,32 @@ public class PlayerController : MonoBehaviour
             _sprite.flipX = false;
     }
 
+    public void StartSeeding()
+    {
+        _animator.SetBool("IsSeeding", true);
+        Debug.Log("StartSeeding");
+    }
 
+    public void StopSeeding()
+    {
+        _animator.SetBool("IsSeeding", false);
+        Debug.Log("StopSeeding");
+    }
 
+    public void ShowSeedBag(bool show)
+    {
+        if (seedBag == null) return;
+
+        if (show)
+        {
+            seedBag.SetActive(true);
+            seedBag.transform.DOScale(1f, 0.15f).From(0.5f);
+        }
+        else
+        {
+            seedBag.transform.DOScale(0.5f, 0.1f)
+                .OnComplete(() => seedBag.SetActive(false));
+        }
+    }
 
 }
