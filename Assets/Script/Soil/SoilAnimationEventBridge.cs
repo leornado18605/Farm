@@ -9,6 +9,10 @@ public class SoilAnimationEventBridge : MonoBehaviour
     public void OnHoeStage2() => toolController.OnHoeStage(2);
     public void OnHoeStage3() => toolController.OnHoeStage(3);
     
+    public void OnWaterStage1() => toolController.OnWaterStage(1);
+    public void OnWaterStage2() => toolController.OnWaterStage(2);
+
+
     public void OnSeedStage1()
     {
         toolController.OnSeedStage(1);

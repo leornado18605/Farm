@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using DG.Tweening;
 
 [RequireComponent(typeof(Rigidbody2D))]
@@ -14,9 +15,11 @@ public class PlayerController : MonoBehaviour
 
     private Vector2 _lastMoveDir = Vector2.down;
     private bool isHoeing = false;
-    
+    private Tween moveTween;
     [SerializeField] private GameObject seedBag;
-    public Vector2 LastDirection => _lastMoveDir;
+
+    private bool isMovingToTile = false;
+    private Vector3 targetPosition;
 
     void FixedUpdate()
     {
@@ -129,6 +132,18 @@ public class PlayerController : MonoBehaviour
         Debug.Log("StopSeeding");
     }
 
+    public void StartWatering()
+    {
+        _animator.SetBool("IsWatering", true);
+        Debug.Log("Start Watering");
+    }
+
+    public void StopWatering()
+    {
+        _animator.SetBool("IsWatering", false);
+        Debug.Log("Stop Watering");
+    }
+
     public void ShowSeedBag(bool show)
     {
         if (seedBag == null) return;
@@ -144,5 +159,43 @@ public class PlayerController : MonoBehaviour
                 .OnComplete(() => seedBag.SetActive(false));
         }
     }
+    
+    public void MoveToAndAct(Vector2 targetPos, System.Action onArrive)
+    {
+        if (IsBusy()) return;
 
+        if (moveTween != null && moveTween.IsActive())
+            moveTween.Kill();
+
+        Vector2 dir = (targetPos - (Vector2)transform.position).normalized;
+
+        FaceDirection(dir);
+
+        float dist = Vector2.Distance(transform.position, targetPos);
+        float travelTime = dist / moveSpeed;
+
+        _animator.SetFloat("Speed", 1f);
+
+        moveTween = transform.DOMove(targetPos, travelTime)
+            .SetEase(Ease.Linear)
+            .OnUpdate(() =>
+            {
+                FaceDirection(dir);
+                _animator.SetFloat("Speed", 1f);
+            })
+            .OnComplete(() =>
+            {
+                _animator.SetFloat("Speed", 0f);
+                onArrive?.Invoke();
+            });
+    }
+
+
+    private bool IsBusy()
+    {
+        return _animator.GetBool("IsHoeing") || 
+               _animator.GetBool("IsSeeding") || 
+               _animator.GetBool("IsWatering");
+    }
+    
 }

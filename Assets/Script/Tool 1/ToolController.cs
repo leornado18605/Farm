@@ -42,11 +42,50 @@ public class ToolController : MonoBehaviour
 
     private bool TrySelectTile(out GroundTile tile)
     {
+        tile = GetClickedTile();
+        if (tile == null) return false;
+
+        if (IsTileTooFar(tile))
+        {
+            MoveToTileAndUse(tile);
+            return false; 
+        }
+
+        return true; 
+    }
+
+    private GroundTile GetClickedTile()
+    {
         Vector2 click = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         Collider2D hit = Physics2D.OverlapPoint(click, soilLayer);
-        tile = hit ? hit.GetComponent<GroundTile>() : null;
-        return tile != null;
+
+        if (hit == null) return null;
+
+        if (GroundTile.TileLookup.TryGetValue(hit, out GroundTile tile))
+            return tile;
+
+        return null;
     }
+
+    private bool IsTileTooFar(GroundTile tile)
+    {
+        float dist = Vector2.Distance(playerTransform.position, tile.transform.position);
+        return dist > interactRange;
+    }
+
+    private void MoveToTileAndUse(GroundTile tile)
+    {
+        Vector2 targetPos = tile.transform.position;
+        Vector2 dir = (targetPos - (Vector2)playerTransform.position).normalized;
+        Vector2 stopPos = targetPos - dir * 0.5f; 
+
+        player.MoveToAndAct(stopPos, () =>
+        {
+            player.FaceDirection(dir);
+            currentTool?.Use(tile, player);
+        });
+    }
+
 
     private void FaceToTile()
     {
@@ -61,7 +100,6 @@ public class ToolController : MonoBehaviour
         if (stage == 3) 
         {
             NextTool();
-            Debug.Log("🌾 Switched automatically to SeedTool after hoeing!");
         }
     }
     private void NextTool()
@@ -78,6 +116,18 @@ public class ToolController : MonoBehaviour
         {
             targetTile.PlantSeed();
             player.StopSeeding();
+            NextTool();
+        }
+    }
+    
+    public void OnWaterStage(int stage)
+    {
+        if (targetTile == null) return;
+        if (stage == 2)
+        {
+            targetTile.WaterSoil();
+            player.StopWatering();
+            NextTool();
         }
     }
     

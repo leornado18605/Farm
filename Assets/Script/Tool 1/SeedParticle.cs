@@ -31,12 +31,10 @@ public class SeedParticle : MonoBehaviour
     void Update()
     {
         timer += Time.deltaTime;
-
-        // Rơi dần
+        
         motion.y += gravity * Time.deltaTime;
         transform.position += (Vector3)(motion * Time.deltaTime);
-
-        // Mờ dần
+        
         alpha = Mathf.Lerp(1f, 0f, timer / lifeTime);
         sr.color = new Color(1, 1, 1, alpha);
 
