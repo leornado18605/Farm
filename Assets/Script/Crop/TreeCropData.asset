@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f492cfae5edc571418c570b935515bad, type: 3}
-  m_Name: CropData
+  m_Name: TreeCropData
   m_EditorClassIdentifier: 
   cropName: Fall Tree
   growthSprites:

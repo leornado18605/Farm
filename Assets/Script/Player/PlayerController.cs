@@ -20,7 +20,10 @@ public class PlayerController : MonoBehaviour
 
     private bool isMovingToTile = false;
     private Vector3 targetPosition;
-
+    
+    private Crop currentHarvestTarget;
+    
+    private ItemPickup currentPickupTarget;
     void FixedUpdate()
     {
         if (isHoeing)
@@ -143,7 +146,89 @@ public class PlayerController : MonoBehaviour
         _animator.SetBool("IsWatering", false);
         Debug.Log("Stop Watering");
     }
+    #region Fishing System
 
+    public bool IsFishingReady { get; private set; } = false;
+
+    public void StartFishing()
+    {
+        _animator.SetTrigger("Cast");
+        IsFishingReady = false;
+        Debug.Log("🎣 Casting...");
+    }
+
+// Gọi từ AnimationEvent cuối clip “Casting”
+    public void OnCastingComplete()
+    {
+        IsFishingReady = true;
+        Debug.Log("✅ Casting done, waiting for fish...");
+    }
+
+    public void SetFishingWaitIdle()
+    {
+        _animator.SetTrigger("WaitIdle");
+        Debug.Log("⏳ Waiting for fish...");
+    }
+
+    public void OnFishHooked()
+    {
+        _animator.SetTrigger("Hooked");
+        Debug.Log("🐟 Fish is biting!");
+    }
+
+    public void OnReelFish(bool success)
+    {
+        _animator.SetTrigger("Roll");
+
+        if (success)
+        {
+            _animator.SetTrigger("CapturedFish");
+            Debug.Log("✅ Caught a fish!");
+        }
+        else
+        {
+            _animator.SetTrigger("CapturedNothing");
+            Debug.Log("❌ No fish caught...");
+        }
+
+        // Quay lại idle sau 2s
+        Invoke(nameof(StopFishing), 20f);
+    }
+
+    public void StopFishing()
+    {
+        _animator.ResetTrigger("Cast");
+        _animator.ResetTrigger("WaitIdle");
+        _animator.ResetTrigger("Hooked");
+        _animator.ResetTrigger("Roll");
+        _animator.ResetTrigger("CapturedFish");
+        _animator.ResetTrigger("CapturedNothing");
+        IsFishingReady = false;
+        Debug.Log("🎣 Fishing ended");
+    }
+
+    #endregion
+
+
+    public void StartHarvestAnim(Crop target)
+    {
+        currentHarvestTarget = target;
+        _animator.SetTrigger("Harvest");
+    }
+    
+    public void OnHarvestEnd()
+    {
+        _animator.ResetTrigger("Harvest");
+        currentHarvestTarget = null;
+    }
+
+    public void OnHarvestHit()
+    {
+        if (currentHarvestTarget != null)
+        {
+            currentHarvestTarget.StartHarvestAnim(this); 
+        }
+    }
     public void ShowSeedBag(bool show)
     {
         if (seedBag == null) return;
@@ -198,4 +283,18 @@ public class PlayerController : MonoBehaviour
                _animator.GetBool("IsWatering");
     }
     
+    public void StartPickupAnim(ItemPickup item)
+    {
+        currentPickupTarget = item;
+        _animator.SetTrigger("Pickup"); // ⚙️ trigger anim "Pickup"
+    }
+
+    public void OnPickupAnimEnd()
+    {
+        if (currentPickupTarget != null)
+        {
+            currentPickupTarget.OnPickedByPlayer();
+            currentPickupTarget = null;
+        }
+    }
 }

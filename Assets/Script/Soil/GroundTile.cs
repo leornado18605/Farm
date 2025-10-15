@@ -95,8 +95,15 @@ public class GroundTile : MonoBehaviour
         spriteRenderer.sprite = hoedSoil;
 
         Crop crop = CropPoolManager.Instance.SpawnCrop(this, defaultCropData);
-        crop.SetSortingOrder(spriteRenderer.sortingOrder + 1);
+        if (crop != null)
+        {
+            Vector3 tilePos = transform.position;
+            float offsetY = 1f; // 👈 chỉnh nếu hạt bị lệch lên/xuống
+            crop.transform.position = new Vector3(tilePos.x, tilePos.y + offsetY, tilePos.z);
+            crop.SetSortingOrder(spriteRenderer.sortingOrder + 1);
+        }
     }
+
 
     
     public SoilState GetState()
@@ -125,4 +132,29 @@ public class GroundTile : MonoBehaviour
         
     }
   
+    public void SetState(SoilState newState)
+    {
+        state = newState;
+
+        switch (state)
+        {
+            case SoilState.Normal:
+                spriteRenderer.sprite = normalSoil;
+                break;
+            case SoilState.Hoeing:
+                spriteRenderer.sprite = hoeingSoil;
+                break;
+            case SoilState.Hoed:
+                spriteRenderer.sprite = hoedSoil;
+                break;
+            case SoilState.Planted:
+                spriteRenderer.sprite = hoedSoil;
+                break;
+            case SoilState.Watered:
+                spriteRenderer.sprite = wateredSoil;
+                break;
+        }
+
+        Debug.Log($"🌾 Tile {name} đã chuyển sang trạng thái {state}");
+    }
 }
