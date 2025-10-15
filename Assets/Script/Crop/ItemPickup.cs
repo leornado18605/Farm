@@ -3,6 +3,7 @@ using DG.Tweening;
 
 public class ItemPickup : MonoBehaviour
 {
+    [SerializeField] private Collider2D myCollider;
     private string itemName;
     private PlayerController player;
     private bool isCollected = false;
@@ -10,6 +11,8 @@ public class ItemPickup : MonoBehaviour
 
     private const float pickupRange = 0.5f;
     private bool canBeCollected = false;
+    
+    public Collider2D Collider => myCollider;
     
     public void Initialize(string name, PlayerController target)
     {

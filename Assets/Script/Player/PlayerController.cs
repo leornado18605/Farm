@@ -19,20 +19,33 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private GameObject seedBag;
 
     private bool isMovingToTile = false;
+    private bool isPerformingAction = false;
+
     private Vector3 targetPosition;
     
     private Crop currentHarvestTarget;
     
     private ItemPickup currentPickupTarget;
+    
+    public Animator Animator => _animator;
+
     void FixedUpdate()
     {
-        if (isHoeing)
+        if (IsDoingAction())
         {
             _rb2D.linearVelocity = Vector2.zero;
             return;
         }
         
         PlayerMovement();
+    }
+    private bool IsDoingAction()
+    {
+        return isPerformingAction || 
+               _animator.GetBool("IsHoeing") ||
+               _animator.GetBool("IsSeeding") ||
+               _animator.GetBool("IsWatering") ||
+               _animator.GetBool("IsFishing");
     }
 
     private void PlayerMovement()
@@ -125,6 +138,7 @@ public class PlayerController : MonoBehaviour
 
     public void StartSeeding()
     {
+        StopHere();
         _animator.SetBool("IsSeeding", true);
         Debug.Log("StartSeeding");
     }
@@ -133,6 +147,7 @@ public class PlayerController : MonoBehaviour
     {
         _animator.SetBool("IsSeeding", false);
         Debug.Log("StopSeeding");
+        isPerformingAction = false; 
     }
 
     public void StartWatering()
@@ -145,54 +160,58 @@ public class PlayerController : MonoBehaviour
     {
         _animator.SetBool("IsWatering", false);
         Debug.Log("Stop Watering");
+        isPerformingAction = false; 
     }
     #region Fishing System
 
+    public void StopHere()
+    {
+        isPerformingAction = true;
+        _rb2D.linearVelocity = Vector2.zero;
+        _animator.SetFloat("Speed", 0f);
+
+    }
     public bool IsFishingReady { get; private set; } = false;
 
     public void StartFishing()
     {
+        StopHere();
         _animator.SetTrigger("Cast");
         IsFishingReady = false;
-        Debug.Log("🎣 Casting...");
     }
 
-// Gọi từ AnimationEvent cuối clip “Casting”
     public void OnCastingComplete()
     {
         IsFishingReady = true;
-        Debug.Log("✅ Casting done, waiting for fish...");
     }
 
     public void SetFishingWaitIdle()
     {
+        StopHere();
         _animator.SetTrigger("WaitIdle");
-        Debug.Log("⏳ Waiting for fish...");
     }
 
     public void OnFishHooked()
     {
+        StopHere();
         _animator.SetTrigger("Hooked");
-        Debug.Log("🐟 Fish is biting!");
     }
 
     public void OnReelFish(bool success)
     {
+        StopHere();
         _animator.SetTrigger("Roll");
 
         if (success)
         {
             _animator.SetTrigger("CapturedFish");
-            Debug.Log("✅ Caught a fish!");
         }
         else
         {
             _animator.SetTrigger("CapturedNothing");
-            Debug.Log("❌ No fish caught...");
         }
 
-        // Quay lại idle sau 2s
-        Invoke(nameof(StopFishing), 20f);
+        Invoke(nameof(StopFishing), 2f);
     }
 
     public void StopFishing()
@@ -204,7 +223,8 @@ public class PlayerController : MonoBehaviour
         _animator.ResetTrigger("CapturedFish");
         _animator.ResetTrigger("CapturedNothing");
         IsFishingReady = false;
-        Debug.Log("🎣 Fishing ended");
+        
+        isPerformingAction = false;
     }
 
     #endregion
@@ -212,6 +232,7 @@ public class PlayerController : MonoBehaviour
 
     public void StartHarvestAnim(Crop target)
     {
+        StopHere();
         currentHarvestTarget = target;
         _animator.SetTrigger("Harvest");
     }
@@ -220,6 +241,7 @@ public class PlayerController : MonoBehaviour
     {
         _animator.ResetTrigger("Harvest");
         currentHarvestTarget = null;
+        isPerformingAction = false; 
     }
 
     public void OnHarvestHit()
@@ -247,7 +269,7 @@ public class PlayerController : MonoBehaviour
     
     public void MoveToAndAct(Vector2 targetPos, System.Action onArrive)
     {
-        if (IsBusy()) return;
+        if (IsDoingAction()) return;
 
         if (moveTween != null && moveTween.IsActive())
             moveTween.Kill();
@@ -274,17 +296,10 @@ public class PlayerController : MonoBehaviour
                 onArrive?.Invoke();
             });
     }
-
-
-    private bool IsBusy()
-    {
-        return _animator.GetBool("IsHoeing") || 
-               _animator.GetBool("IsSeeding") || 
-               _animator.GetBool("IsWatering");
-    }
     
     public void StartPickupAnim(ItemPickup item)
     {
+        StopHere();
         currentPickupTarget = item;
         _animator.SetTrigger("Pickup"); // ⚙️ trigger anim "Pickup"
     }
@@ -295,6 +310,7 @@ public class PlayerController : MonoBehaviour
         {
             currentPickupTarget.OnPickedByPlayer();
             currentPickupTarget = null;
+            isPerformingAction = false; 
         }
     }
 }

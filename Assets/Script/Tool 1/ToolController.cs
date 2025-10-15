@@ -29,6 +29,20 @@ public class ToolController : MonoBehaviour
     }
     private void HandleClick(Collider2D hit, Vector2 click)
     {
+        ItemPickup item = ItemPickupPoolManager.Instance.GetItemByCollider(hit);
+        if (item != null)
+        {
+            player.StartPickupAnim(item);
+            return;
+        }
+        
+        if (player.Animator.GetBool("IsHoeing"))
+        {
+            if (hit.CompareTag("Soil"))
+            {
+                return;
+            }
+        }
         Crop crop = CropPoolManager.Instance.GetCropByCollider(hit);
         if (crop != null)
         {
@@ -83,10 +97,14 @@ public class ToolController : MonoBehaviour
 // 🌱 Soil Handler
     private void HandleSoilClick(GroundTile tile)
     {
+        if (player.Animator.GetBool("IsHoeing"))
+        {
+            return;
+        }
+        
         Tool autoTool = DetectToolForTile(tile);
         if (autoTool == null)
         {
-            Debug.Log("⚠️ Không có tool phù hợp với trạng thái đất hiện tại!");
             return;
         }
 
