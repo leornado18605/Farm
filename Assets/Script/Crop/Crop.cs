@@ -89,17 +89,14 @@ public class Crop : MonoBehaviour
     
     public void TryRemoveAfterCut()
     {
-        if (!isCutDown) return; // chỉ cho click nếu cây đã bị chặt
-        Debug.Log("🍂 Cây bị loại bỏ hoàn toàn, đất trống trở lại!");
+        if (!isCutDown) return;
 
-        // Xóa cây khỏi pool
         CropPoolManager.Instance.DespawnCrop(currentTile);
         isCutDown = false;
     }
 
     private void SpawnHarvestEffect()
     {
-        // 👇 (Tùy chọn) thêm hiệu ứng particle hoặc âm thanh
     }
     public GroundTile GetBoundTile()
     {
@@ -109,7 +106,7 @@ public class Crop : MonoBehaviour
     {
         if (animator != null)
         {
-            animator.SetTrigger("Harvested"); // trigger anim Harvest cây
+            animator.SetTrigger("Harvested"); 
         }
         else
         {

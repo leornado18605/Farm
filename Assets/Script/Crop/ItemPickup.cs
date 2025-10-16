@@ -30,7 +30,6 @@ public class ItemPickup : MonoBehaviour
 
         float dist = Vector2.Distance(player.transform.position, transform.position);
 
-        // 👇 Khi click vào item → player đi đến
         if (Input.GetMouseButtonDown(0))
         {
             Vector2 click = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -42,7 +41,6 @@ public class ItemPickup : MonoBehaviour
             }
         }
 
-        // 👇 Khi đã target và đến gần
         if (isTargeted && dist <= pickupRange)
         {
             Collect();
@@ -54,14 +52,11 @@ public class ItemPickup : MonoBehaviour
         if (isCollected) return;
         isCollected = true;
 
-        Debug.Log($"🎒 Player bắt đầu nhặt {itemName}");
         player.StartPickupAnim(this);
     }
     
-    // 🪄 Được gọi bởi Player khi anim kết thúc
     public void OnPickedByPlayer()
     {
-        Debug.Log($"🍃 {itemName} đã được nhặt hoàn tất!");
         transform.DOKill();
         transform.DOScale(Vector3.zero, 0.25f)
             .SetEase(Ease.InBack)
@@ -69,5 +64,15 @@ public class ItemPickup : MonoBehaviour
             {
                 ItemPickupPoolManager.Instance.DespawnItem(this);
             });
+        
+        InventoryItem itemData = Resources.Load<InventoryItem>($"Items/{itemName}");
+        if (itemData != null)
+            InventoryManager.Instance.AddItem(itemData, 1);
+    }
+    
+    public enum CollectableType
+    {
+        None,
+        Wood
     }
 }
